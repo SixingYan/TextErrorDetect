@@ -1,0 +1,3 @@
+训练的时候，模型的输入都是X和y
+
+如果同时有train和valid，那就是train_X和valid_X
