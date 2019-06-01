@@ -1,3 +1,4 @@
+# encoding = utf-8
 import csv
 import re
 import random
@@ -169,8 +170,13 @@ def build_sents_fasttext(path: str, source: str, target: str):
     """  """
     df = pd.read_csv(os.path.join(path, source))[:100]
 
-    data = ['__label__{0} {1} \n'.format(x, y) for x in df[
-        'target'].values.tolist() for y in df['sent'].values.tolist()]
+    #data = ['{0}\t__label__{1}\n'.format(y, x) for x in df[
+    #    'target'].values.tolist() for y in df['sent'].values.tolist()]
+
+    data = []
+    for y in df['sent'].values.tolist():
+        x = 1 if random.random()> 0.5 else 0
+        data.append('{0}\t__label__{1}\n'.format(y, x))
 
     with open(os.path.join(path, target), 'a', encoding='utf-8', errors='ignore') as f:
         f.writelines(data)
@@ -295,8 +301,8 @@ def main():
     # 完成
     # mergeDf(const.DATAPATH, ['paopao_chars.csv', 'kenlm_chars.csv'], 'kenlm_paopao_chars.csv')
 
-    #
-    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_fasttext.txt',)
+    # 
+    build_sents_fasttext(const.DATAPATH, 'kenlm_chars.csv', 'kenlm_fasttext.txt',)
 
     # 完成
     # cut_word()
