@@ -282,6 +282,28 @@ def reextract(path, source1, source2, target):
     X_f.to_csv(os.path.join(path, target), index=None)
 
 
+def get_sent_embd(words, m1):
+
+    sum(for w in words if w in )/len(words)
+
+def _sim(sent:str, m1, m2):
+    """ sent 空格分隔的句子 """
+    get_sentence_vector()
+
+def extract_embd():
+    # load data
+    S = pd.read_csv(os.path.join(path, source1))  # [:100]
+    X = pd.read_csv(os.path.join(path, source2))  # [:100]
+    print('Data shape : ', X.shape)
+
+    # drop
+    X.drop(['len', 'num_rate', 'en_rate', '1n_ppl_n', '1n_etp_p', '1n_ppl_s1', '1n_etp_s1', '3n_ppl_s1', '3n_ppl_s1', '1n_ppl_n_pos'], axis=1, inplace=True)
+    
+    ['1n_p2n_cbow'] 
+    ['1n_p2s1_cbow']
+    ['1n_n2s1_cbow']
+
+
 def dropcol(path, source, target):
     """  """
     X = pd.read_csv(os.path.join(path, source))  # [:100]

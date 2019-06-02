@@ -25,33 +25,13 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.tree.export import export_text
 
+from sklearn.ensemble import RandomForestClassifier as RF
 
 import pandas as pd
 import os
 import time
 
 import const
-
-
-def getData(path, source):
-    """  """
-    X = pd.read_csv(os.path.join(path, source))
-    
-    #print(X['target'].value_counts())
-    #raise
-    
-    y = X['target'].values
-    X = X.drop(['target'], axis=1)
-    X = X.sample(frac=1)
-    
-    
-    #print(X[:3])
-    #print(X.columns.values.tolist())
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
-    #print(X_train[:3])
-    #print(X_test[:3])
-    return X_train, X_test, y_train, y_test
-    # splits = list(StratifiedKFold(n_splits=split_num, shuffle=True, random_state=SEED).split(train_X, train_y))
 
 
 def trainDT(X, y):
@@ -61,13 +41,11 @@ def trainDT(X, y):
     return tree_clf
 
 
-
 def trainRF(X, y):
     from sklearn.ensemble import RandomForestClassifier
     rnd_clf = RandomForestClassifier()
     rnd_clf.fit(X, y)
     return rnd_clf
-
 
 
 def eval(clf, X, y):
@@ -76,21 +54,48 @@ def eval(clf, X, y):
     return accuracy_score(y, y_pred)
 
 
-def main():
-    
+def test():
+    """  """
     X_train, X_test, y_train, y_test = getData(const.DATAPATH, 'data_kenlm_paopao.csv')  # <<< 训练/测试 的 分割
-    
+
     print('start ......')
-    
+
     stime = time.time()
     tree_clf = trainDT(X_train, y_train)
     print('train time : ', (time.time() - stime) / 60)
-    
+
     print('accuracy score : ', eval(tree_clf, X_test, y_test))
-    
+
     tree_text = export_text(tree_clf, feature_names=X_train.columns.values.tolist())
     print('Tree Structure : ')
     print(tree_text)
+
+# 数据导入
+
+
+def getData(path, source):
+    """  """
+    X = pd.read_csv(os.path.join(path, source))
+    y = X['target'].values
+    X = X.drop(['target'], axis=1)
+    X = X.sample(frac=1)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=1)
+    return X_train, X_test, y_train, y_test
+
+
+def main():
+    path = 'D:/yansixing/ErrorDetection/Datasets/Data/'
+    source = 'data_kenlm_paopao_v2.2.csv'
+    X_train, X_test, y_train, y_test = getData(path, source)
+
+    print('starting...')
+    stime = time.time()
+    rf = RF(n_estimators=28, max_depth=47, min_samples_split=10,
+            min_samples_leaf=5, max_features=29, oob_score=True, random_state=10)
+
+    rf.fit(X_train, y_train)
+    print('Time cost {:.2f} ||| Score={:.4f}'.format((time.time() - stime) / 60, rf.score(X_test, y_test)))
+
 
 if __name__ == '__main__':
     main()

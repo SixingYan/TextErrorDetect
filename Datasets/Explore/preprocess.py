@@ -164,24 +164,36 @@ def extract_sent_kenlm(path, sdir, target1, target2):
 
 # --------------
 # 构造符合fasttext要求的文本
-
+def build_sents_fasttext_unspv(path: str, source: str, target: str):
+    df = pd.read_csv(os.path.join(path, source))
+    print('Data shape : ', df.shape)
+    with open(os.path.join(path, target), 'a', encoding='utf-8', errors='ignore') as f:
+        for x in df['sent'].values.tolist():
+            line = '{0}\n'.format(x)
+            f.write(line)
 
 def build_sents_fasttext(path: str, source: str, target: str):
     """  """
-    df = pd.read_csv(os.path.join(path, source))[:100]
+    df = pd.read_csv(os.path.join(path, source))  # [:100]
+
+    print('Data shape : ', df.shape)
+    with open(os.path.join(path, target), 'a', encoding='utf-8', errors='ignore') as f:
+        for x, y in zip(df['target'].values.tolist(), df['sent'].values.tolist()):
+            line = '{0}\t__label__{1}\n'.format(y, x)
+            f.write(line)
 
     #data = ['{0}\t__label__{1}\n'.format(y, x) for x in df[
     #    'target'].values.tolist() for y in df['sent'].values.tolist()]
 
-    data = []
-    for y in df['sent'].values.tolist():
-        x = 1 if random.random()> 0.5 else 0
-        data.append('{0}\t__label__{1}\n'.format(y, x))
+    #data = []
+    # for y in df['sent'].values.tolist():
+    #    x = 1 if random.random()> 0.5 else 0
+    #    data.append('{0}\t__label__{1}\n'.format(y, x))
 
-    with open(os.path.join(path, target), 'a', encoding='utf-8', errors='ignore') as f:
-        f.writelines(data)
+    # with open(os.path.join(path, target), 'a', encoding='utf-8', errors='ignore') as f:
+    #    f.writelines(data)
 
-    return len(data)
+    # return len(data)
 
 # --------------
 
@@ -217,7 +229,7 @@ def pos_to_csv(path: str, source: str, target: str):
     """  """
     print('now start : ', source)
 
-    X = pd.read_csv(os.path.join(path, source))#[:100]
+    X = pd.read_csv(os.path.join(path, source))  # [:100]
 
     X['sent'] = X['sent'].apply(lambda x: str(x))
     X['pos'] = X['sent'].apply(
@@ -268,7 +280,7 @@ def mergeDf(path: str, sources: List, target: str):
             df = pd.concat([df, pd.read_csv(os.path.join(path, s))], ignore_index=True)
 
     print(df.head())
-    
+
     df.to_csv(os.path.join(path, target), index=None)
 
 
@@ -301,8 +313,10 @@ def main():
     # 完成
     # mergeDf(const.DATAPATH, ['paopao_chars.csv', 'kenlm_chars.csv'], 'kenlm_paopao_chars.csv')
 
-    # 
-    build_sents_fasttext(const.DATAPATH, 'kenlm_chars.csv', 'kenlm_fasttext.txt',)
+    # 完成
+    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext.txt',)
+    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_jieba.csv', 'kenlm_paopao_jieba_fasttext.txt',)
+    build_sents_fasttext_unspv(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext_unspv.txt')
 
     # 完成
     # cut_word()

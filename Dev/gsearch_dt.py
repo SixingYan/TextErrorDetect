@@ -167,8 +167,6 @@ plt.xlabel('max features')
 plt.show()
 
 
-
-
 # ___________________________________________
 
 from sklearn.ensemble import RandomForestClassifier
@@ -177,58 +175,62 @@ from sklearn import cross_validation, metrics
 
 
 rf0 = RandomForestClassifier(oob_score=True, random_state=10)
-rf0.fit(X,y)
-print rf0.oob_score_
-y_predprob = rf0.predict_proba(X)[:,1] # 这里应该直接输出类
-print "AUC Score (Train): %f" % metrics.roc_auc_score(y, y_predprob)
+rf0.fit(X, y)
+print(rf0.oob_score_)
+y_predprob = rf0.predict_proba(X)[:, 1]  # 这里应该直接输出类
+print("AUC Score (Train): %f" % metrics.roc_auc_score(y, y_predprob))
 
+print('OOB={} || AUC={}'.format())
 
-
-param_test1 = {'n_estimators':range(5,71,5)}
-gsearch1 = GridSearchCV(estimator = RandomForestClassifier(min_samples_split=100,
-                                  min_samples_leaf=20,max_depth=8,max_features='sqrt' ,random_state=10), 
-                       param_grid = param_test1, scoring='roc_auc',cv=5)
-gsearch1.fit(X,y)
+param_test1 = {'n_estimators': range(5, 56)}  # 50
+gsearch1 = GridSearchCV(estimator=RandomForestClassifier(min_samples_split=100,
+                                                         min_samples_leaf=20, max_depth=8, max_features='sqrt', random_state=10),
+                        param_grid=param_test1, scoring='roc_auc', cv=5)
+gsearch1.fit(X, y)
 gsearch1.grid_scores_, gsearch1.best_params_, gsearch1.best_score_
 
 
-
-
-
-param_test2 = {'max_depth':range(3,14,2), 'min_samples_split':range(50,201,20)}
-gsearch2 = GridSearchCV(estimator = RandomForestClassifier(n_estimators= 60, 
-                                  min_samples_leaf=20,max_features='sqrt' ,oob_score=True, random_state=10),
-   param_grid = param_test2, scoring='roc_auc',iid=False, cv=5)
-gsearch2.fit(X,y)
+param_test2 = {'max_depth': range(3, 14, 2), 'min_samples_split': range(50, 201, 20)}
+gsearch2 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=60,
+                                                         min_samples_leaf=20, max_features='sqrt', oob_score=True, random_state=10),
+                        param_grid=param_test2, scoring='roc_auc', iid=False, cv=5)
+gsearch2.fit(X, y)
 gsearch2.grid_scores_, gsearch2.best_params_, gsearch2.best_score_
 
 
-rf1 = RandomForestClassifier(n_estimators= 60, max_depth=13, min_samples_split=110,
-                                  min_samples_leaf=20,max_features='sqrt' ,oob_score=True, random_state=10)
-rf1.fit(X,y)
+rf1 = RandomForestClassifier(n_estimators=60, max_depth=13, min_samples_split=110,
+                             min_samples_leaf=20, max_features='sqrt', oob_score=True, random_state=10)
+rf1.fit(X, y)
 print rf1.oob_score_
 
 
-
-param_test3 = {'min_samples_split':range(80,150,20), 'min_samples_leaf':range(10,60,10)}
-gsearch3 = GridSearchCV(estimator = RandomForestClassifier(n_estimators= 60, max_depth=13,
-                                  max_features='sqrt' ,oob_score=True, random_state=10),
-   param_grid = param_test3, scoring='roc_auc',iid=False, cv=5)
-gsearch3.fit(X,y)
+param_test3 = {'min_samples_split': range(80, 150, 20), 'min_samples_leaf': range(10, 60, 10)}
+gsearch3 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=60, max_depth=13,
+                                                         max_features='sqrt', oob_score=True, random_state=10),
+                        param_grid=param_test3, scoring='roc_auc', iid=False, cv=5)
+gsearch3.fit(X, y)
 gsearch3.grid_scores_, gsearch3.best_params_, gsearch3.best_score_
 
 
-
-param_test4 = {'max_features':range(3,11,2)}
-gsearch4 = GridSearchCV(estimator = RandomForestClassifier(n_estimators= 60, max_depth=13, min_samples_split=120,
-                                  min_samples_leaf=20 ,oob_score=True, random_state=10),
-   param_grid = param_test4, scoring='roc_auc',iid=False, cv=5)
-gsearch4.fit(X,y)
+param_test4 = {'max_features': range(3, 11, 2)}
+gsearch4 = GridSearchCV(estimator=RandomForestClassifier(n_estimators=60, max_depth=13, min_samples_split=120,
+                                                         min_samples_leaf=20, oob_score=True, random_state=10),
+                        param_grid=param_test4, scoring='roc_auc', iid=False, cv=5)
+gsearch4.fit(X, y)
 gsearch4.grid_scores_, gsearch4.best_params_, gsearch4.best_score_
 
 
-
-rf2 = RandomForestClassifier(n_estimators= 60, max_depth=13, min_samples_split=120,
-                                  min_samples_leaf=20,max_features=7 ,oob_score=True, random_state=10)
-rf2.fit(X,y)
+rf2 = RandomForestClassifier(n_estimators=60, max_depth=13, min_samples_split=120,
+                             min_samples_leaf=20, max_features=7, oob_score=True, random_state=10)
+rf2.fit(X, y)
 print rf2.oob_score_
+
+
+num_estimators = list(range(4, 104, 4))
+train_results, test_results = [], []
+for enum in num_estimators:
+    print('_______________________________')
+    stime = time.time()
+    rf = RF(n_estimators=enum, max_depth=47, min_samples_split=10,
+            min_samples_leaf=5, max_features=29, oob_score=True, random_state=10)
+    print('Train n_estimators {} ||| Time cost {:.2f} ||| oob_score={:.4f}'.format(enum, (time.time() - stime) / 60, rf.score(X_test, y_test)))
