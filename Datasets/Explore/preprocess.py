@@ -5,10 +5,13 @@ import random
 from typing import List, Tuple
 import pandas as pd
 import os
+import pickle
+from pandas.core.frame import DataFrame
 
 import demjson
 import jieba
 import jieba.posseg as pseg
+from nltk.util import ngrams
 
 import const
 
@@ -27,7 +30,7 @@ def extract_txt_sougou(path, source, hid):
             if len(sent.strip()) == 0:
                 continue
             ID = '{0}{1}'.format(hid, iD)
-            sents.append([ID, sent, const.POS])
+            sents.append([ID, keepcn(sent), const.POS])
             iD += 1
     # print(sents)
     return sents
@@ -71,7 +74,7 @@ def extract_txt_paopao(path, source, hid):
     with open(os.path.join(path, source), 'r', encoding='utf_8_sig', errors='ignore') as f:
         for s in parse_sent(f.read()):
             ID = '{0}{1}'.format(hid, iD)
-            sents.append([ID, ' '.join(parse_single(s)), const.NEG])
+            sents.append([ID, ' '.join(parse_single(keepcn(s))), const.NEG])
             iD += 1
     return sents
 
@@ -118,10 +121,10 @@ def extract_txt_kenlm(path: str, source: str, hid: str)->Tuple:
         for d in dicts:
             ID = '{0}{1}'.format(hid, iD)
             #.csv - sents, timestamp
-            sents_ts.append([ID, d['onebest'], d['bg'], d['ed'], const.POS])
+            sents_ts.append([ID, keepcn(d['onebest']), d['bg'], d['ed'], const.POS])
             # .csv - only sentence
             sents_space.append(
-                [ID, ' '.join(parse_single(d['onebest'])), const.POS])
+                [ID, ' '.join(parse_single(keepcn(d['onebest']))), const.POS])
 
             iD += 1
             #print('now is :', iD)
@@ -164,6 +167,8 @@ def extract_sent_kenlm(path, sdir, target1, target2):
 
 # --------------
 # 构造符合fasttext要求的文本
+
+
 def build_sents_fasttext_unspv(path: str, source: str, target: str):
     df = pd.read_csv(os.path.join(path, source))
     print('Data shape : ', df.shape)
@@ -172,6 +177,7 @@ def build_sents_fasttext_unspv(path: str, source: str, target: str):
             line = '{0}\n'.format(x)
             f.write(line)
 
+
 def build_sents_fasttext(path: str, source: str, target: str):
     """  """
     df = pd.read_csv(os.path.join(path, source))  # [:100]
@@ -179,10 +185,11 @@ def build_sents_fasttext(path: str, source: str, target: str):
     print('Data shape : ', df.shape)
     with open(os.path.join(path, target), 'a', encoding='utf-8', errors='ignore') as f:
         for x, y in zip(df['target'].values.tolist(), df['sent'].values.tolist()):
+            #y = ''.join(w.strip() for w in re.findall(r'[\u4e00-\u9fa5]', str(y)) if len(w.strip()) > 0)
             line = '{0}\t__label__{1}\n'.format(y, x)
             f.write(line)
 
-    #data = ['{0}\t__label__{1}\n'.format(y, x) for x in df[
+    # data = ['{0}\t__label__{1}\n'.format(y, x) for x in df[
     #    'target'].values.tolist() for y in df['sent'].values.tolist()]
 
     #data = []
@@ -219,9 +226,9 @@ def cut_to_csv(path: str, source: str, target: str):
 
 def cut_word():
     """  """
-    cut_to_csv(const.DATAPATH, 'kenlm_chars.csv', 'kenlm_jieba.csv')
-    cut_to_csv(const.DATAPATH, 'paopao_chars.csv', 'paopao_jieba.csv')
-    cut_to_csv(const.DATAPATH, 'sougou_chars.csv', 'sougou_jieba.csv')
+    cut_to_csv(const.DATAPATH, 'kenlm_chars_v2.csv', 'kenlm_jieba_v2.csv')
+    cut_to_csv(const.DATAPATH, 'paopao_chars_v2.csv', 'paopao_jieba_v2.csv')
+    cut_to_csv(const.DATAPATH, 'sougou_chars_v2.csv', 'sougou_jieba_v2.csv')
 
 
 # 用于生成句法特征
@@ -247,9 +254,103 @@ def get_pos():
     pos_to_csv(const.DATAPATH, 'paopao_chars.csv', 'paopao_pos.csv')
     pos_to_csv(const.DATAPATH, 'sougou_chars.csv', 'sougou_pos.csv')
 
+# --------------
+# --------------
+# 抽取自标注数据集，用于测试
+
+
+def extract_parnoise():
+    # 抽取数据
+    path = 'D:/yansixing/tmp'
+    source = 'parnoise_data.csv'
+    poslist, neglist = [], []
+    with open(os.path.join(path, source), 'r', encoding='gbk', errors='ignore', newline='') as f:
+        for line in f.readlines():
+            pos = None
+            if ',' in line:
+                neg, pos = tuple(line.split(','))
+            else:
+                neg = line
+            if pos is not None and len(pos.strip()) > 1:
+                poslist.append(pos.strip())
+            if len(neg.strip()) > 1:
+                neglist.append(neg.strip())
+
+    targets = [1] * len(poslist) + [0] * len(neglist)
+    sent = poslist + neglist
+    df = DataFrame({'target': targets, 'sent': sent})
+
+    print('Data shape : ', df.shape)
+    print(df.head())
+
+    #pattern = re.compile(r'([\u4e00-\u9fa5])')
+    df['sent'] = df['sent'].apply(lambda x: ''.join(w.strip() for w in re.findall(r'[\u4e00-\u9fa5]', x) if len(w.strip()) > 0))
+
+    # 使用特征抽取模式，只使用一个特征
+    print('Get features')
+
+    def getFeature(X):
+        m = getPikcle(os.path.join(const.PKPATH, 'lm_3_paopao_jieba.pk'))
+        X['sent'] = X['sent'].apply(lambda x: str(x))
+        X['sent'] = X['sent'].apply(lambda x: ' '.join(w for w in jieba.cut(x)))
+        X['3n_etp_n_jieba'] = X['sent'].apply(lambda x: m.entropy(ngrams(x, 3, True, True, '<s>', '</s>')) if m.entropy(ngrams(x, 3, True, True, '<s>', '</s>')) != float('inf') else -1)
+        return X
+
+    df = getFeature(df)
+    print(df.head())
+    df.drop(['sent'], axis=1).to_csv(os.path.join(const.DATAPATH, 'parnoise_feats.csv'))
+
+    # 使用fasttext格式
+    print('Get fasttext')
+    with open(os.path.join(const.DATAPATH, 'parnoise_fasttext.txt'), 'a', encoding='utf-8', errors='ignore') as f:
+        for x, y in zip(df['target'].values.tolist(), df['sent'].values.tolist()):
+            line = '{0}\t__label__{1}\n'.format(y, x)
+            f.write(line)
+
 
 # --------------
+# --------------
+# 抽取normal/unormal
+
+def extract_normal():
+    path = 'D:/yansixing/'
+    source1 = 'normal_20190531.txt'
+    poslist, neglist = [], []
+    with open(os.path.join(path, source1), 'r', encoding='utf-8', errors='ignore', newline='') as f:
+        for line in f.readlines():
+            poslist.append(line.split()[-1])
+
+    source2 = 'unnormal_20190531.txt'
+    with open(os.path.join(path, source2), 'r', encoding='utf-8', errors='ignore', newline='') as f:
+        for line in f.readlines():
+            neglist.append(line.split()[-1])
+
+    targets = [const.POS] * len(poslist) + [const.NEG] * len(neglist)
+    sent = poslist + neglist
+    df = DataFrame({'target': targets, 'sent': sent})
+
+    #pattern = re.compile(r'([\u4e00-\u9fa5])')
+    df['sent'] = df['sent'].apply(lambda x: str(x))
+    df['sent'] = df['sent'].apply(lambda x: ''.join(w.strip() for w in re.findall(r'[\u4e00-\u9fa5]', x) if len(w.strip()) > 0))
+    df['sent'] = df['sent'].apply(lambda x: ' '.join(parse_single(x)))
+    #df['sent'] = df['sent'].apply(lambda x: ' '.join(w for w in jieba.cut(x)))
+
+    print('Data shape : ', df.shape)
+    print(df.head())
+
+    # 使用fasttext格式
+    print('Get fasttext')
+    with open(os.path.join(const.DATAPATH, 'normal_chars_fasttext.txt'), 'a', encoding='utf-8', errors='ignore') as f:
+        for x, y in zip(df['target'].values.tolist(), df['sent'].values.tolist()):
+            line = '{0}\t__label__{1}\n'.format(y, x)
+            f.write(line)
+
+
+# --------------
+# --------------
 # 通用工具
+
+
 def parse_sent(para: str)->List:
     para = re.sub('([。！？\?])([^”’])', r"\1\n\2", para)  # 单字符断句符
     para = re.sub('(\.{6})([^”’])', r"\1\n\2", para)  # 英文省略号
@@ -284,22 +385,19 @@ def mergeDf(path: str, sources: List, target: str):
     df.to_csv(os.path.join(path, target), index=None)
 
 
-def sample_subset_csv(path, source, target, ratio):
+def keepcn(s: str):
+    """ 只保留中文 """
+    return ''.join(w.strip() for w in re.findall(r'[\u4e00-\u9fa5]', s) if len(w.strip()) > 0)
+
+
+def getPikcle(path: str):
     """  """
-    scount = 0
-    tcount = 0
-    with open(path + source, 'r') as f:
-        for line in f:
-            scount += 1
-            if random.random() < ratio:
-                with open(path + target, 'a') as fp:
-                    fp.write(line)
-                tcount += 1
-
-    return scount, tcount
+    with open(path, 'rb') as f:
+        v = pickle.load(f)
+    return v
 
 
-def main():
+def main_v1():
     pass
     """ 运行处理的任务，写明任务内容 """
     # 完成
@@ -314,9 +412,11 @@ def main():
     # mergeDf(const.DATAPATH, ['paopao_chars.csv', 'kenlm_chars.csv'], 'kenlm_paopao_chars.csv')
 
     # 完成
-    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext.txt',)
-    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_jieba.csv', 'kenlm_paopao_jieba_fasttext.txt',)
-    build_sents_fasttext_unspv(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext_unspv.txt')
+    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext.txt')
+    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_jieba.csv', 'kenlm_paopao_jieba_fasttext.txt')
+    # build_sents_fasttext_unspv(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext_unspv.txt')
+
+    # build_sents_fasttext_v2(const.DATAPATH, 'kenlm_paopao_jieba.csv', 'kenlm_paopao_jieba_v2_fasttext.txt')
 
     # 完成
     # cut_word()
@@ -329,6 +429,35 @@ def main():
 
     # 完成
     # mergeDf(const.DATAPATH, ['paopao_pos.csv', 'kenlm_pos.csv'], 'kenlm_paopao_pos.csv')
+
+    # 完成
+    # extract_parnoise()
+    # extract_normal()
+
+
+def main():
+
+    # extract_sent_kenlm(const.DATAPATH, 'kenlm_corpus/',
+    #                   'kenlm_sentences_v2.csv', 'kenlm_chars_v2.csv')
+
+    # extract_sent_paopao(const.DATAPATH, 'paopao_coupus/', 'paopao_chars_v2.csv')
+
+    # extract_sent_sougou(const.DATAPATH, 'sougou/', 'sougou_chars_v2.csv')
+
+    # mergeDf(const.DATAPATH, ['paopao_chars_v2.csv', 'kenlm_chars_v2.csv'], 'kenlm_paopao_chars_v2.csv')
+    # mergeDf(const.DATAPATH, ['paopao_jieba_v2.csv', 'kenlm_jieba_v2.csv'], 'kenlm_paopao_jieba_v2.csv')
+    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_chars_v2.csv', 'kenlm_paopao_chars_fasttext_v2.txt')
+    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_jieba_v2.csv', 'kenlm_paopao_jieba_fasttext_v2.txt')
+    # build_sents_fasttext_unspv(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext_unspv.txt')
+
+    # build_sents_fasttext_v2(const.DATAPATH, 'kenlm_paopao_jieba.csv', 'kenlm_paopao_jieba_v2_fasttext.txt')
+
+    # cut_word()
+
+    # mergeDf(const.DATAPATH, ['paopao_pos.csv', 'kenlm_pos.csv'], 'kenlm_paopao_pos.csv')
+
+    # extract_parnoise()
+    # extract_normal()
 
 if __name__ == '__main__':
     main()

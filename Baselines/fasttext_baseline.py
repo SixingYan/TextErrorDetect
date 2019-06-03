@@ -57,11 +57,12 @@ def eval(clf, path: str):
 
 def train():
     # info
-    n = 1
-    source = 'kenlm_paopao_jieba_fasttext.txt'
-    target = 'klmpao_jieba_ft_model_{}.ft'.format(n)
+    n = 2
+    source = 'kenlm_paopao_jieba_fasttext_v2.txt'
+    target = 'klmpao_jieba_v2_ft_model_{}.ft'.format(n)
     reuse = False
-    delete = False
+    delete = True
+    save = True
     print('Train detail: n={} || source={} || target={} || reuse={} || delete={}'.format(n, source, target, reuse, delete))
 
     # loading
@@ -83,11 +84,12 @@ def train():
     #print('accuracy score : ', eval(clf, X_test))
 
     # clean tmp
-    if delete:
+    if delete is True:
         cleantmp([X_train, X_test])
 
     # save 保存模型
-    clf.save_model(os.path.join(const.MODELPATH, target))
+    if save is True:
+        clf.save_model(os.path.join(const.MODELPATH, target))
     # FT.load_model(path)
 
 
@@ -117,10 +119,10 @@ def trainUnSpv(path: str, n=1, model='skipgram'):
 def train_unsupervised():
     """  """
     pass
-    n = 1
+    n = 2
     way = 'skipgram'
-    source = 'kenlm_paopao_chars_fasttext_unspv.txt'
-    target = 'klmpao_chars_ftembd_{}_{}.vec'.format(way, n)
+    source = 'kenlm_paopao_jieba_fasttext_unspv.txt'
+    target = 'klmpao_jieba_ftembd_{}_{}.vec'.format(way, n)
     reuse = False
     delete = False
     print('Train detail: n={} || way={} || source={} || target={} || reuse={} || delete={}'.format(n, way, source, target, reuse, delete))
@@ -146,6 +148,15 @@ def train_unsupervised():
     model.save_model(os.path.join(const.MODELPATH, target))
     # FT.load_model(path)
 
+
+def test():
+    '''  '''
+    source = 'klmpao_jieba_ft_model_3.ft'
+    target = 'kenlm_paopao_jieba_v2_fasttext.txt'
+    clf = FT.load_model(os.path.join(const.MODELPATH, source))
+    size, precision, recall = clf.test(os.path.join(const.DATAPATH, target))
+    print('accuracy score : ', precision)
+    # return precision, recall
 
 '''
 import fasttext
@@ -187,8 +198,9 @@ def train():
 
 
 def main():
-
-    train_unsupervised()
+    pass
+    # test()
+    train()
     # data_explore()
 
 if __name__ == '__main__':

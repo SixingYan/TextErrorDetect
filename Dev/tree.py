@@ -20,7 +20,7 @@ rnd_clf.fit()
 
 '''
 
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier as DT
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.tree.export import export_text
@@ -36,16 +36,9 @@ import const
 
 def trainDT(X, y):
     """ decision tree """
-    tree_clf = DecisionTreeClassifier(max_depth=5, splitter="random", max_leaf_nodes=50)
+    tree_clf = DT(max_depth=5, splitter="random", max_leaf_nodes=50)
     tree_clf.fit(X, y)
     return tree_clf
-
-
-def trainRF(X, y):
-    from sklearn.ensemble import RandomForestClassifier
-    rnd_clf = RandomForestClassifier()
-    rnd_clf.fit(X, y)
-    return rnd_clf
 
 
 def eval(clf, X, y):
@@ -90,11 +83,13 @@ def main():
 
     print('starting...')
     stime = time.time()
-    rf = RF(n_estimators=28, max_depth=47, min_samples_split=10,
-            min_samples_leaf=5, max_features=29, oob_score=True, random_state=10)
+    # rf = RF(n_estimators=28, max_depth=47, min_samples_split=10,
+    #        min_samples_leaf=5, max_features=29, oob_score=True, random_state=10)
+    #clf = RF(random_state=10)
+    clf = DT(random_state=10)
+    clf.fit(X_train, y_train)
 
-    rf.fit(X_train, y_train)
-    print('Time cost {:.2f} ||| Score={:.4f}'.format((time.time() - stime) / 60, rf.score(X_test, y_test)))
+    print('Time cost {:.2f} ||| Score={:.4f}'.format((time.time() - stime) / 60, clf.score(X_test, y_test)))
 
 
 if __name__ == '__main__':

@@ -96,11 +96,9 @@ def getData(path: str, source: str, encode: str='UTF-8', col='sent')->List:
     """"""
     df = pd.read_csv(os.path.join(path, source), encoding=encode)  # [:100]
 
-    # print(df.head())
     df[col] = df[col].apply(lambda x: str(x))
     df[col] = df[col].apply(lambda x: x.split())
-    # print(df['sent'])
-
+    
     return df[col].values.tolist()
 
 '''
@@ -118,14 +116,14 @@ def test0():
 
 def train(n=None):
     """"""
-    n = 1
+    n = 3
 
     print('dealing n = ', n)
 
-    name = 'paopao_pos.csv'
+    name = 'kenlm_chars_v2.csv'
     print('loading : ', name)
 
-    chars = getData(const.DATAPATH, name, col='pos')  # <<< 列表，列表里面是用分词（字）列表
+    chars = getData(const.DATAPATH, name)  # <<< 列表，列表里面是用分词（字）列表
 
     # train
     print('start......')
@@ -135,7 +133,7 @@ def train(n=None):
     print('Vocab size : ', len(m.vocab))
 
     # save
-    mname = 'lm_{0}_paopao_pos.pk'.format(n)
+    mname = 'lm_{0}_kenlm_chars_v2.pk'.format(n)
     with open(os.path.join(const.PKPATH, mname), 'wb') as f:
         pickle.dump(m, f)
 
@@ -145,7 +143,7 @@ def main():
     # train()
 
     n = 1
-    name = 'kenlm_pos.csv'
+    name = 'kenlm_jieba.csv'
     chars = getData(const.DATAPATH, name)  # <<< 列表，列表里面是用分词（字）列表
 
     mname = 'lm_{0}_kenlm_jieba.pk'.format(n)
