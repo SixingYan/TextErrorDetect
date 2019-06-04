@@ -20,11 +20,10 @@ for i in range(len(vegetables)):
 
 fig.tight_layout()
 plt.show()
-
 '''
 f, ax = plt.subplots(figsize=[28, 21])
 
-df = pd.read_csv(os.path.join(const.DATAPATH, 'data_kenlm_paopao_v2.2.csv'))
+df = pd.read_csv(os.path.join(const.DATAPATH, 'data_un_normal.csv'))
 
 sns.heatmap(df.corr(), annot=True, fmt=".2f", ax=ax,
             cbar_kws={'label': 'Correlation Coefficient'}, cmap='viridis')

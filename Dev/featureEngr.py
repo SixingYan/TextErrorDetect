@@ -122,7 +122,7 @@ def feature_engineering(X):
     
     # len------------------------------
     # < 0.1
-    # X['len'] = X['sent'].progress_apply(lambda x: len(x))
+    X['len'] = X['sent'].progress_apply(lambda x: len(x))
 
     # stopword------------------------------
     # stopword_baidu 1 < 0.01
@@ -144,7 +144,7 @@ def feature_engineering(X):
 
     # chinese char------------------------------
     X['cn_rate'] = X['sent'].progress_apply(lambda x: len(cn_regex.findall(x)) / len(x))
-
+    
     # English word rate------------------------------
     # < 0.1
     # X['en_rate'] = X['sent'].progress_apply(lambda x: len(en_regex.findall(x)) / len(x))
@@ -262,68 +262,25 @@ def add_feature(S, X):
     pass
 
     """      
-    S['sent'] = S['sent'].progress_apply(lambda x: str(x))
-    S['sent'] = S['sent'].progress_apply(lambda x: x.split())
-
-    X['1n_ppl_p_jieba'] = S['sent'].progress_apply(lambda x: l1p.perplexity(x) if l1p.perplexity(x) != float('inf') else -1)
-    X['1n_etp_p_jieba'] = S['sent'].progress_apply(lambda x: l1p.entropy(x) if l1p.entropy(x) != float('inf') else -1)
-
-    X['2n_etp_p_jieba'] = S['sent'].progress_apply(lambda x: l2p.entropy(x) if l2p.entropy(x) != float('inf') else -1)
-    X['2n_ppl_p_jieba'] = S['sent'].progress_apply(lambda x: l2p.perplexity(x) if l2p.perplexity(x) != float('inf') else -1)
-
-    X['3n_etp_p_jieba'] = S['sent'].progress_apply(lambda x: l3p.entropy(x) if l3p.entropy(x) != float('inf') else -1)
-    X['3n_ppl_p_jieba'] = S['sent'].progress_apply(lambda x: l3p.perplexity(x) if l3p.perplexity(x) != float('inf') else -1)
-
-    #
-    #X['1n_ppl_n_jieba'] = S['sent'].progress_apply(lambda x: l1n.perplexity(x) if l1n.perplexity(x) != float('inf') else -1)
-    #X['1n_etp_n_jieba'] = S['sent'].progress_apply(lambda x: l1n.entropy(x) if l1n.entropy(x) != float('inf') else -1)
-
-    X['2n_etp_n_jieba'] = S['sent'].progress_apply(lambda x: l2n.entropy(x) if l2n.entropy(x) != float('inf') else -1)
-    X['2n_ppl_n_jieba'] = S['sent'].progress_apply(lambda x: l2n.perplexity(x) if l2n.perplexity(x) != float('inf') else -1)
-
-    X['3n_etp_n_jieba'] = S['sent'].progress_apply(lambda x: l3n.entropy(x) if l3n.entropy(x) != float('inf') else -1)
-    X['3n_ppl_n_jieba'] = S['sent'].progress_apply(lambda x: l3n.perplexity(x) if l3n.perplexity(x) != float('inf') else -1)
-
-    #
-    #X['1n_ppl_s1_jieba'] = S['sent'].progress_apply(lambda x: l1s1.perplexity(x) if l1s1.perplexity(x) != float('inf') else -1)
-    #X['1n_etp_s1_jieba'] = S['sent'].progress_apply(lambda x: l1s1.entropy(x) if l1s1.entropy(x) != float('inf') else -1)
-
-    #X['2n_etp_s1_jieba'] = S['sent'].progress_apply(lambda x: l2s1.entropy(x) if l2s1.entropy(x) != float('inf') else -1)
-    #X['2n_ppl_s1_jieba'] = S['sent'].progress_apply(lambda x: l2s1.perplexity(x) if l2s1.perplexity(x) != float('inf') else -1)
-
-    X['3n_etp_s1_jieba'] = S['sent'].progress_apply(lambda x: l3s1.entropy(x) if l3s1.entropy(x) != float('inf') else -1)
-    X['3n_ppl_s1_jieba'] = S['sent'].progress_apply(lambda x: l3s1.perplexity(x) if l3s1.perplexity(x) != float('inf') else -1)
-
     '''
     S['pos'] = S['pos'].progress_apply(lambda x: str(x))
     S['pos'] = S['pos'].progress_apply(lambda x: x.split())
-
     X['1n_ppl_p_pos'] = S['pos'].progress_apply(lambda x: l1p.perplexity(x) if l1p.perplexity(x) != float('inf') else -1)
     X['1n_etp_p_pos'] = S['pos'].progress_apply(lambda x: l1p.entropy(x) if l1p.entropy(x) != float('inf') else -1)
-
     X['2n_etp_p_pos'] = S['pos'].progress_apply(lambda x: l2p.entropy(x) if l2p.entropy(x) != float('inf') else -1)
     X['2n_ppl_p_pos'] = S['pos'].progress_apply(lambda x: l2p.perplexity(x) if l2p.perplexity(x) != float('inf') else -1)
-
     X['3n_etp_p_pos'] = S['pos'].progress_apply(lambda x: l3p.entropy(x) if l3p.entropy(x) != float('inf') else -1)
     X['3n_ppl_p_pos'] = S['pos'].progress_apply(lambda x: l3p.perplexity(x) if l3p.perplexity(x) != float('inf') else -1)
-
-    # < 0.1
-    # X['1n_ppl_n_pos'] = S['pos'].progress_apply(lambda x: l1n.perplexity(x) if l1n.perplexity(x) != float('inf') else -1)
+    X['1n_ppl_n_pos'] = S['pos'].progress_apply(lambda x: l1n.perplexity(x) if l1n.perplexity(x) != float('inf') else -1)
     X['1n_etp_n_pos'] = S['pos'].progress_apply(lambda x: l1n.entropy(x) if l1n.entropy(x) != float('inf') else -1)
-
     X['2n_etp_n_pos'] = S['pos'].progress_apply(lambda x: l2n.entropy(x) if l2n.entropy(x) != float('inf') else -1)
     X['2n_ppl_n_pos'] = S['pos'].progress_apply(lambda x: l2n.perplexity(x) if l2n.perplexity(x) != float('inf') else -1)
-
     X['3n_etp_n_pos'] = S['pos'].progress_apply(lambda x: l3n.entropy(x) if l3n.entropy(x) != float('inf') else -1)
     X['3n_ppl_n_pos'] = S['pos'].progress_apply(lambda x: l3n.perplexity(x) if l3n.perplexity(x) != float('inf') else -1)
-
-    #
     X['1n_ppl_s1_pos'] = S['pos'].progress_apply(lambda x: l1s1.perplexity(x) if l1s1.perplexity(x) != float('inf') else -1)
     X['1n_etp_s1_pos'] = S['pos'].progress_apply(lambda x: l1s1.entropy(x) if l1s1.entropy(x) != float('inf') else -1)
-
     X['2n_etp_s1_pos'] = S['pos'].progress_apply(lambda x: l2s1.entropy(x) if l2s1.entropy(x) != float('inf') else -1)
     X['2n_ppl_s1_pos'] = S['pos'].progress_apply(lambda x: l2s1.perplexity(x) if l2s1.perplexity(x) != float('inf') else -1)
-
     X['3n_etp_s1_pos'] = S['pos'].progress_apply(lambda x: l3s1.entropy(x) if l3s1.entropy(x) != float('inf') else -1)
     X['3n_ppl_s1_pos'] = S['pos'].progress_apply(lambda x: l3s1.perplexity(x) if l3s1.perplexity(x) != float('inf') else -1)
     

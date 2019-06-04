@@ -51,7 +51,6 @@ def eval(clf, path: str):
     classifier.predict('文本') #输出改文本的预测结
     """
     size, precision, recall = clf.test(path)
-    # print(res)
     return precision, recall
 
 
@@ -127,9 +126,6 @@ def train_unsupervised():
     delete = False
     print('Train detail: n={} || way={} || source={} || target={} || reuse={} || delete={}'.format(n, way, source, target, reuse, delete))
 
-    # loading
-    #X_train, X_test = getData(const.DATAPATH, source, reuse=reuse)
-
     # train
     print('start...')
     stime = time.time()
@@ -146,7 +142,6 @@ def train_unsupervised():
 
     # save 保存模型
     model.save_model(os.path.join(const.MODELPATH, target))
-    # FT.load_model(path)
 
 
 def test():
@@ -156,45 +151,6 @@ def test():
     clf = FT.load_model(os.path.join(const.MODELPATH, source))
     size, precision, recall = clf.test(os.path.join(const.DATAPATH, target))
     print('accuracy score : ', precision)
-    # return precision, recall
-
-'''
-import fasttext
-
-def trainFT(X_path: str, M_path: str, n: int=1, dim:int=200, epoch:int=10):
-    """  """
-    clf = fasttext.supervised(X_path, M_path, word_ngrams=n, epoch=5, dim=10)
-    return clf
-
-def eval(clf, X_path: str):
-    """  """
-    return clf.test(X_path).precision
-
-def train():
-    # info
-    n = 1
-    source = 'kenlm_paopao_chars_fasttext.txt'
-    target = 'klmpao_chars_ft_model_{}'.format(n)
-    reuse = False
-    delete = False
-    print('Train detail: n={} || source={} || target={} || reuse={} || delete={}'.format(n, source, target, reuse, delete))
-
-    # loading
-    X_train, X_test = getData(const.DATAPATH, source, reuse=reuse)
-
-    # train
-    stime = time.time()
-    clf = trainFT(X_train, os.path.join(const.MODELPATH, target), n=n)
-    print('train time : ', (time.time() - stime) / 60)
-
-    texts = ['不 乱 来 ， 这 个 可 能 进 来 我 没 哦 玩 游 戏 。', '不 乱 来 ， 这 个 可 能 进 来 我 没 哦 玩 游 戏 。']
-    labels = clf.predict(texts)
-    print('predict : ', str(labels))
-    print('accuracy score : ', eval(clf, X_test))
-
-    if delete:
-        cleantmp([X_train, X_test])
-'''
 
 
 def main():
@@ -205,11 +161,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-'''
-    classifier = fasttext.supervised(train, 'classifier.model', lable_prefix='__lable__')
-    result = classifier.test(test)
-    print("P@1:", result.precision)  # 准确率
-    print("R@2:", result.recall)  # 召回率
-    print("Number of examples:", result.nexamples)  # 预测错的例子
-'''

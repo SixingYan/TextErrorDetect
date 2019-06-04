@@ -329,22 +329,22 @@ def extract_normal():
     sent = poslist + neglist
     df = DataFrame({'target': targets, 'sent': sent})
 
-    #pattern = re.compile(r'([\u4e00-\u9fa5])')
     df['sent'] = df['sent'].apply(lambda x: str(x))
     df['sent'] = df['sent'].apply(lambda x: ''.join(w.strip() for w in re.findall(r'[\u4e00-\u9fa5]', x) if len(w.strip()) > 0))
     df['sent'] = df['sent'].apply(lambda x: ' '.join(parse_single(x)))
-    #df['sent'] = df['sent'].apply(lambda x: ' '.join(w for w in jieba.cut(x)))
+
+    df.to_csv(os.path.join(const.DATAPATH, 'un_normal_chars.csv'), index=None)
 
     print('Data shape : ', df.shape)
     print(df.head())
-
+    '''
     # 使用fasttext格式
     print('Get fasttext')
     with open(os.path.join(const.DATAPATH, 'normal_chars_fasttext.txt'), 'a', encoding='utf-8', errors='ignore') as f:
         for x, y in zip(df['target'].values.tolist(), df['sent'].values.tolist()):
             line = '{0}\t__label__{1}\n'.format(y, x)
             f.write(line)
-
+    '''
 
 # --------------
 # --------------
@@ -364,10 +364,6 @@ def parse_sent(para: str)->List:
 
 def parse_single(sent: str)->List:
     """ 把中文句子转化成字的列表 """
-    '''
-    pattern = re.compile(r'([\u4e00-\u9fa5])')
-    return [w.strip() for w in pattern.split(sent) if len(w.strip()) > 0]
-    '''
     return [w.strip() for w in sent if len(w.strip()) > 0]
 
 
@@ -436,7 +432,8 @@ def main_v1():
 
 
 def main():
-
+    pass
+    """ 准备取消所有标点的句子 """
     # extract_sent_kenlm(const.DATAPATH, 'kenlm_corpus/',
     #                   'kenlm_sentences_v2.csv', 'kenlm_chars_v2.csv')
 
@@ -448,16 +445,8 @@ def main():
     # mergeDf(const.DATAPATH, ['paopao_jieba_v2.csv', 'kenlm_jieba_v2.csv'], 'kenlm_paopao_jieba_v2.csv')
     # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_chars_v2.csv', 'kenlm_paopao_chars_fasttext_v2.txt')
     # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_jieba_v2.csv', 'kenlm_paopao_jieba_fasttext_v2.txt')
-    # build_sents_fasttext_unspv(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext_unspv.txt')
 
-    # build_sents_fasttext_v2(const.DATAPATH, 'kenlm_paopao_jieba.csv', 'kenlm_paopao_jieba_v2_fasttext.txt')
-
-    # cut_word()
-
-    # mergeDf(const.DATAPATH, ['paopao_pos.csv', 'kenlm_pos.csv'], 'kenlm_paopao_pos.csv')
-
-    # extract_parnoise()
-    # extract_normal()
+    extract_normal()
 
 if __name__ == '__main__':
     main()
