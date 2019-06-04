@@ -252,4 +252,5 @@ $RECYCLE.BIN/
 *.ft
 *.vec
 *.w2v
+*.word2vec
 *config.toml
