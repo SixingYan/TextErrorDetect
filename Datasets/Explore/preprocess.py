@@ -189,22 +189,23 @@ def build_sents_fasttext(path: str, source: str, target: str):
             line = '{0}\t__label__{1}\n'.format(y, x)
             f.write(line)
 
-    # data = ['{0}\t__label__{1}\n'.format(y, x) for x in df[
-    #    'target'].values.tolist() for y in df['sent'].values.tolist()]
+# --------------
+# --------------
+# 抽取政治知识树
 
-    #data = []
-    # for y in df['sent'].values.tolist():
-    #    x = 1 if random.random()> 0.5 else 0
-    #    data.append('{0}\t__label__{1}\n'.format(y, x))
 
-    # with open(os.path.join(path, target), 'a', encoding='utf-8', errors='ignore') as f:
-    #    f.writelines(data)
-
-    # return len(data)
+def extract_zhengzhi(path, source, target):
+    df = pd.read_csv(os.path.join(path, source), encoding='gb2312')
+    df['sentence'] = df['sentence'].apply(lambda x: str(x))
+    df['sentence'] = df['sentence'].apply(lambda x: x.encode('utf-8').decode('utf-8'))
+    df = df[['sentence', 'target']]
+    df['sent_chars'] = df['sentence'].apply(lambda x: ' '.join(parse_single(x)))
+    df['sent_jieba'] = df['sentence'].apply(lambda x: ' '.join(w for w in jieba.cut(x)))
+    df = df[['sent_chars', 'sent_jieba', 'target']]
+    print(df.head())
+    df.to_csv(os.path.join(const.DATAPATH, target), index=None)
 
 # --------------
-
-
 # --------------
 # 抽取句法特征
 
@@ -364,6 +365,7 @@ def parse_sent(para: str)->List:
 
 def parse_single(sent: str)->List:
     """ 把中文句子转化成字的列表 """
+    sent = keepcn(sent)
     return [w.strip() for w in sent if len(w.strip()) > 0]
 
 
@@ -383,6 +385,7 @@ def mergeDf(path: str, sources: List, target: str):
 
 def keepcn(s: str):
     """ 只保留中文 """
+    #print(s)
     return ''.join(w.strip() for w in re.findall(r'[\u4e00-\u9fa5]', s) if len(w.strip()) > 0)
 
 
@@ -393,13 +396,12 @@ def getPikcle(path: str):
     return v
 
 
-def main_v1():
+def main():
     pass
     """ 运行处理的任务，写明任务内容 """
     # 完成
     # extract_sent_kenlm(const.DATAPATH, 'kenlm_corpus/',
     #                 'kenlm_sentences.csv', 'kenlm_chars.csv')
-
     # 完成
     # extract_sent_paopao(const.DATAPATH, 'paopao_coupus/', 'paopao_chars.csv')
     # 完成
@@ -411,42 +413,23 @@ def main_v1():
     # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext.txt')
     # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_jieba.csv', 'kenlm_paopao_jieba_fasttext.txt')
     # build_sents_fasttext_unspv(const.DATAPATH, 'kenlm_paopao_chars.csv', 'kenlm_paopao_chars_fasttext_unspv.txt')
-
     # build_sents_fasttext_v2(const.DATAPATH, 'kenlm_paopao_jieba.csv', 'kenlm_paopao_jieba_v2_fasttext.txt')
-
     # 完成
     # cut_word()
-
     # 完成
     # get_pos()
-
     # 完成
     # mergeDf(const.DATAPATH, ['paopao_jieba.csv', 'kenlm_jieba.csv'], 'kenlm_paopao_jieba.csv')
-
     # 完成
     # mergeDf(const.DATAPATH, ['paopao_pos.csv', 'kenlm_pos.csv'], 'kenlm_paopao_pos.csv')
-
     # 完成
     # extract_parnoise()
     # extract_normal()
 
+    #
+    extract_zhengzhi(const.DATAPATH, 'zhengzhi_file.csv', 'zhengzhi.csv')
 
-def main():
-    pass
-    """ 准备取消所有标点的句子 """
-    # extract_sent_kenlm(const.DATAPATH, 'kenlm_corpus/',
-    #                   'kenlm_sentences_v2.csv', 'kenlm_chars_v2.csv')
 
-    # extract_sent_paopao(const.DATAPATH, 'paopao_coupus/', 'paopao_chars_v2.csv')
-
-    # extract_sent_sougou(const.DATAPATH, 'sougou/', 'sougou_chars_v2.csv')
-
-    # mergeDf(const.DATAPATH, ['paopao_chars_v2.csv', 'kenlm_chars_v2.csv'], 'kenlm_paopao_chars_v2.csv')
-    # mergeDf(const.DATAPATH, ['paopao_jieba_v2.csv', 'kenlm_jieba_v2.csv'], 'kenlm_paopao_jieba_v2.csv')
-    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_chars_v2.csv', 'kenlm_paopao_chars_fasttext_v2.txt')
-    # build_sents_fasttext(const.DATAPATH, 'kenlm_paopao_jieba_v2.csv', 'kenlm_paopao_jieba_fasttext_v2.txt')
-
-    extract_normal()
 
 if __name__ == '__main__':
     main()
