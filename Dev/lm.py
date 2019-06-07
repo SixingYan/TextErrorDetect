@@ -60,7 +60,7 @@ def getEveryModel(n: int, text: List, ngrams):
 
 def getData(path: str, source: str, encode: str='UTF-8', col='sent')->List:
     """ """
-    df = pd.read_csv(os.path.join(path, source), encoding=encode)  # [:100]
+    df = pd.read_csv(os.path.join(path, source), encoding=encode)
 
     df[col] = df[col].apply(lambda x: str(x))
     df[col] = df[col].apply(lambda x: x.split())
@@ -68,14 +68,13 @@ def getData(path: str, source: str, encode: str='UTF-8', col='sent')->List:
     return df[col].values.tolist()
 
 
-def train(n=None):
+def train(fname: str, n=2, cut='chars'):
     """"""
-    n = 2
     print('dealing n = ', n)
 
-    name = 'kenlm_chars_v2.csv'
+    name = '{}_{}.csv'.format(fname, cut)
     print('loading : ', name)
-    chars = getData(const.DATAPATH, name)  # <<< 列表，列表里面是用分词（字）列表
+    chars = getData(const.DATAPATH, name)
 
     # train
     print('start......')
@@ -85,13 +84,13 @@ def train(n=None):
     print('Vocab size : ', len(m.vocab))
 
     # save
-    mname = 'lm_{0}_kenlm_chars_v2.pk'.format(n)
+    mname = 'lm_{}_{}_{}.pk'.format(n, fname, cut)
     with open(os.path.join(const.PKPATH, mname), 'wb') as f:
         pickle.dump(m, f)
 
 
 def main():
-    pass
+    train('paopao', n=1, cut='jieba')
 
 if __name__ == '__main__':
-    train()
+    main()

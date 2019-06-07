@@ -57,8 +57,8 @@ def eval(clf, path: str):
 def train():
     # info
     n = 2
-    source = 'kenlm_paopao_jieba_fasttext_v2.txt'
-    target = 'klmpao_jieba_v2_ft_model_{}.ft'.format(n)
+    source = 'jieba_train_fasttext_v3.txt'
+    target = 'jieba_v3_ft_model_{}.ft'.format(n)
     reuse = False
     delete = True
     save = True
@@ -90,6 +90,16 @@ def train():
     if save is True:
         clf.save_model(os.path.join(const.MODELPATH, target))
     # FT.load_model(path)
+
+
+def test():
+    '''  '''
+    source = 'jieba_v3_ft_model_2.ft'
+    target = 'jieba_test_fasttext_v3.txt'
+    clf = FT.load_model(os.path.join(const.MODELPATH, source))
+    size, precision, recall = clf.test(os.path.join(const.DATAPATH, target))
+    print('accuracy score : ', precision)
+
 
 
 def data_explore():
@@ -143,20 +153,10 @@ def train_unsupervised():
     # save 保存模型
     model.save_model(os.path.join(const.MODELPATH, target))
 
-
-def test():
-    '''  '''
-    source = 'klmpao_jieba_ft_model_3.ft'
-    target = 'kenlm_paopao_jieba_v2_fasttext.txt'
-    clf = FT.load_model(os.path.join(const.MODELPATH, source))
-    size, precision, recall = clf.test(os.path.join(const.DATAPATH, target))
-    print('accuracy score : ', precision)
-
-
 def main():
     pass
     # test()
-    train()
+    test()
     # data_explore()
 
 if __name__ == '__main__':

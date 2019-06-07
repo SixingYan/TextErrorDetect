@@ -4,9 +4,6 @@ import pandas as pd
 
 import os
 import const
-
-fig, ax = plt.subplots()
-
 '''
 # Rotate the tick labels and set their alignment.
 plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
@@ -21,9 +18,12 @@ for i in range(len(vegetables)):
 fig.tight_layout()
 plt.show()
 '''
-f, ax = plt.subplots(figsize=[28, 21])
+f, ax = plt.subplots(figsize=[44, 33])
 
-df = pd.read_csv(os.path.join(const.DATAPATH, 'data_un_normal.csv'))
+df = pd.read_csv(os.path.join(const.DATAPATH, 'data_kenlm_paopao_test_v4.csv'))
+
+df.drop(['2n_ppl_weibo_chars', '2n_etp_weibo_chars', '3n_ppl_weibo_chars', '3n_etp_weibo_chars',
+         '2n_ppl_sms_chars', '2n_etp_sms_chars', '3n_ppl_sms_chars', '3n_etp_sms_chars'], axis=1, inplace=True)
 
 sns.heatmap(df.corr(), annot=True, fmt=".2f", ax=ax,
             cbar_kws={'label': 'Correlation Coefficient'}, cmap='viridis')

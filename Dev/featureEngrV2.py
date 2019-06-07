@@ -1,7 +1,7 @@
 '''
     对每一条sent，生成相应的特征，特征使用.csv存储
 '''
-from typing import List
+from typing import List, Dict
 import os
 import pickle
 import gc
@@ -25,7 +25,7 @@ def getPikcle(path: str):
 
 def countReptMx(words: List):
     """  """
-    mx = -1
+    mx = 1
     c = 1
     pre = None
     for i, w in enumerate(words):
@@ -45,91 +45,65 @@ def countReptMx(words: List):
     return mx
 
 
+def langFeatures(X, params: Dict, template: str):
+    """  """
+    name = params['name']
+    for args in params['args']:
+        n, cut = args
+        m = getPikcle(os.path.join(const.PKPATH, template.format(n, name, cut)))
+        lm = LanModel(m, n)
+        X['{}n_etp_{}_{}'.format(n, name, cut)] = X[cut].progress_apply(lambda x: lm.entropy(x) if lm.entropy(x) != float('inf') else -1)
+        X['{}n_ppl_{}_{}'.format(n, name, cut)] = X[cut].progress_apply(lambda x: lm.perplexity(x) if lm.perplexity(x) != float('inf') else -1)
+        del m, lm
+        gc.collect()
+    return X
+
+
 def feature_engineering(X):
     """  """
     # 这里还是空格分词的
     X['sent'] = X['sent'].progress_apply(lambda x: str(x))
-
-    # 空格分字
-    X['sent_chars'] = X['sent'].progress_apply(lambda x: str(x))
-
     # 分字列表
     X['chars'] = X['sent'].progress_apply(lambda x: x.split())
-
     # 这里做合并,因为原本用了分字的句子，但是这里计算有要用原句的，也有要用结巴分词的，所以只能先合并
     X['sent'] = X['chars'].progress_apply(lambda x: ''.join(x))
-
     # 这里使用jieba分词列表
     X['jieba'] = X['sent'].progress_apply(lambda x: [w for w in jieba.cut(x)])
-
-    # 空格分词
-    X['sent_jieba'] = X['jieba'].progress_apply(lambda x: ' '.join(x))
-
     # len------------------------------
     X['len'] = X['sent'].progress_apply(lambda x: len(x))
     X.drop(['sent'], axis=1, inplace=True)
-
-    # chinese char------------------------------
-    #X['char_rate'] = X['chars'].progress_apply(lambda x: len(set(x)))
-    #X['char_mx_rate'] = X['chars'].progress_apply(lambda x: Counter(x).most_common(1)[0][1] / len(x) if len(x) > 0 else 0)
-
+    # 字组成的
+    X['char_rate'] = X['chars'].progress_apply(lambda x: len(set(x)))
+    X['char_mx_rate'] = X['chars'].progress_apply(lambda x: Counter(x).most_common(1)[0][1] / len(x) if len(x) > 0 else 0)
+    # 词组成的
     X['pairs'] = X['chars'].progress_apply(lambda x: list(ngrams(x, 2)))
-    #X['pair_rate'] = X['pairs'].progress_apply(lambda x: len(set(x)) / len(x) if len(x) > 0 else 0)
-    #X['pair_mx_rate'] = X['pairs'].progress_apply(lambda x: Counter(x).most_common(1)[0][1] / len(x) if len(x) > 0 else 0)
-
+    X['pair_rate'] = X['pairs'].progress_apply(lambda x: len(set(x)) / len(x) if len(x) > 0 else 0)
+    X['pair_mx_rate'] = X['pairs'].progress_apply(lambda x: Counter(x).most_common(1)[0][1] / len(x) if len(x) > 0 else 0)
     # 找出重复片段
-    #X['rept_mx'] = X['chars'].progress_apply(lambda x: countReptMx(x))
-    #X['rept_mx_rate'] = X['rept_mx'] / X['len']
+    X['rept_mx'] = X['chars'].progress_apply(lambda x: countReptMx(x))
+    X['rept_mx_rate'] = X['rept_mx'] / X['len']
+    X['rept_mx_2'] = X['pairs'].progress_apply(lambda x: countReptMx(x))
+    X['pairs_count'] = X['pairs'].progress_apply(lambda x: len(x))
+    X['rept_mx_2_rate'] = X['rept_mx_2'] / X['pairs_count']
 
-    # X['rept_mx_2'] = X['pairs'].progress_apply(lambda x: countReptMx(x))
-
-    X.drop(['pairs', 'len'], axis=1, inplace=True)
+    X.drop(['pairs', 'rept_mx', 'rept_mx_2', 'pairs_count'], axis=1, inplace=True)
 
     # language model------------------------------
-    model_p2 = getPikcle(os.path.join(const.PKPATH, 'lm_2_kenlm_chars_v2.pk'))
-    model_n2 = getPikcle(os.path.join(const.PKPATH, 'lm_2_paopao_chars_v2.pk'))
-    model_p3 = getPikcle(os.path.join(const.PKPATH, 'lm_3_kenlm_chars_v2.pk'))
-    model_n3 = getPikcle(os.path.join(const.PKPATH, 'lm_3_paopao_chars_v2.pk'))
-    l2p = LanModel(model_p2, 2)
-    l3p = LanModel(model_p3, 3)
-    l2n = LanModel(model_n2, 2)
-    l3n = LanModel(model_n3, 3)
-    X['2n_etp_p'] = X['chars'].progress_apply(lambda x: l2p.entropy(x) if l2p.entropy(x) != float('inf') else -1)
-    #X['2n_ppl_p'] = X['chars'].progress_apply(lambda x: l2p.perplexity(x) if l2p.perplexity(x) != float('inf') else -1)
-    X['3n_etp_p'] = X['chars'].progress_apply(lambda x: l3p.entropy(x) if l3p.entropy(x) != float('inf') else -1)
-    X['3n_ppl_p'] = X['chars'].progress_apply(lambda x: l3p.perplexity(x) if l3p.perplexity(x) != float('inf') else -1)
-    X['2n_etp_n'] = X['chars'].progress_apply(lambda x: l2n.entropy(x) if l2n.entropy(x) != float('inf') else -1)
-    X['2n_ppl_n'] = X['chars'].progress_apply(lambda x: l2n.perplexity(x) if l2n.perplexity(x) != float('inf') else -1)
-    X['3n_etp_n'] = X['chars'].progress_apply(lambda x: l3n.entropy(x) if l3n.entropy(x) != float('inf') else -1)
-    X['3n_ppl_n'] = X['chars'].progress_apply(lambda x: l3n.perplexity(x) if l3n.perplexity(x) != float('inf') else -1)
-    del l2p, l3p, l2n, l3n, model_p2, model_p3, model_n2, model_n3
-    X.drop(['chars', 'sent_chars'], axis=1, inplace=True)
-    gc.collect()
-
-    # 基于语言模型的计量
-    model_p1 = getPikcle(os.path.join(const.PKPATH, 'lm_1_kenlm_jieba_v2.pk'))
-    model_p2 = getPikcle(os.path.join(const.PKPATH, 'lm_2_kenlm_jieba_v2.pk'))
-    model_n2 = getPikcle(os.path.join(const.PKPATH, 'lm_2_paopao_jieba_v2.pk'))
-    model_p3 = getPikcle(os.path.join(const.PKPATH, 'lm_3_kenlm_jieba_v2.pk'))
-    model_n3 = getPikcle(os.path.join(const.PKPATH, 'lm_3_paopao_jieba_v2.pk'))
-    l1p = LanModel(model_p1, 1)
-    l2p = LanModel(model_p2, 2)
-    l3p = LanModel(model_p3, 3)
-    l2n = LanModel(model_n2, 2)
-    l3n = LanModel(model_n3, 3)
-    #X['1n_ppl_p_jieba'] = X['jieba'].progress_apply(lambda x: l1p.perplexity(x) if l1p.perplexity(x) != float('inf') else -1)
-    X['1n_etp_p_jieba'] = X['jieba'].progress_apply(lambda x: l1p.entropy(x) if l1p.entropy(x) != float('inf') else -1)
-    X['2n_etp_p_jieba'] = X['jieba'].progress_apply(lambda x: l2p.entropy(x) if l2p.entropy(x) != float('inf') else -1)
-    X['2n_ppl_p_jieba'] = X['jieba'].progress_apply(lambda x: l2p.perplexity(x) if l2p.perplexity(x) != float('inf') else -1)
-    X['3n_etp_p_jieba'] = X['jieba'].progress_apply(lambda x: l3p.entropy(x) if l3p.entropy(x) != float('inf') else -1)
-    X['3n_ppl_p_jieba'] = X['jieba'].progress_apply(lambda x: l3p.perplexity(x) if l3p.perplexity(x) != float('inf') else -1)
-    X['2n_etp_n_jieba'] = X['jieba'].progress_apply(lambda x: l2n.entropy(x) if l2n.entropy(x) != float('inf') else -1)
-    X['2n_ppl_n_jieba'] = X['jieba'].progress_apply(lambda x: l2n.perplexity(x) if l2n.perplexity(x) != float('inf') else -1)
-    X['3n_etp_n_jieba'] = X['jieba'].progress_apply(lambda x: l3n.entropy(x) if l3n.entropy(x) != float('inf') else -1)
-    X['3n_ppl_n_jieba'] = X['jieba'].progress_apply(lambda x: l3n.perplexity(x) if l3n.perplexity(x) != float('inf') else -1)
-    del l1p, l2p, l3p, l2n, l3n, model_p1, model_p2, model_p3, model_n2, model_n3
-    X.drop(['jieba', 'sent_jieba'], axis=1, inplace=True)
-    gc.collect()
+    params = {
+        'pos': {'name': 'kenlm', 'args': [(2, 'chars'), (3, 'chars'),
+                                          (2, 'jieba'), (3, 'jieba'), (1, 'jieba')]},
+        'neg': {'name': 'paopao', 'args': [(2, 'chars'), (3, 'chars'),
+                                           (2, 'jieba'), (3, 'jieba'), (1, 'jieba')]},
+        's1': {'name': 'weibo', 'args': [(2, 'chars'), (3, 'chars'),
+                                         (2, 'jieba'), (3, 'jieba'), (1, 'jieba')]},
+        's2': {'name': 'sms', 'args': [(2, 'chars'), (3, 'chars'),
+                                       (2, 'jieba'), (3, 'jieba'), (1, 'jieba')]}}
+    template = 'lm_{}_{}_{}.pk'
+    X = langFeatures(X, params['pos'], template)
+    X = langFeatures(X, params['neg'], template)
+    X = langFeatures(X, params['s1'], template)
+    X = langFeatures(X, params['s2'], template)
+    X.drop(['jieba', 'chars'], axis=1, inplace=True)
 
     return X
 
@@ -137,12 +111,13 @@ def feature_engineering(X):
 def extract(path: str, source: str, target: str):
     """  """
     # load data
-    X = pd.read_csv(os.path.join(path, source))  # [:100]
+    X = pd.read_csv(os.path.join(path, source))#[:100]
     print('Data shape : ', X.shape)
+    print(X.head())
 
     # get features
     X_f = feature_engineering(X)
-    # X_f = X.drop(['sent', 'id'], axis=1)  # 把sentence, id 列删除
+    X_f = X.drop(['id'], axis=1)  # 把sentence, id 列删除
 
     print(X_f[:5])
     print(X_f.columns.values.tolist())
@@ -156,7 +131,7 @@ def dropcol(path, source, target):
     X = pd.read_csv(os.path.join(path, source))  # [:100]
     print('Data shape : ', X.shape)
 
-    X.drop(['len', 'char_rate', 'char_mx_rate', 'pair_rate', 'pair_mx_rate', 'rept_mx', 'rept_mx_rate', '2n_ppl_p', '1n_ppl_p_jieba'], axis=1, inplace=True)
+    X.drop([], axis=1, inplace=True)
 
     print(X[:5])
     print(X.columns.values.tolist())
@@ -165,9 +140,9 @@ def dropcol(path, source, target):
 
 
 def main():
-    #extract(const.DATAPATH, 'kenlm_paopao_chars_v2.csv', 'data_kenlm_paopao_v2.csv')
-    #dropcol(const.DATAPATH, 'data_kenlm_paopao_v2.csv','data_kenlm_paopao_v21.csv')
-    extract(const.DATAPATH, 'un_normal_chars.csv', 'data_un_normal.csv')
-    #dropcol(const.DATAPATH, 'data_kenlm_paopao_v2.csv','data_kenlm_paopao_v21.csv')
+    extract(const.DATAPATH, 'kenlm_paopao_chars_train_v3.csv', 'data_kenlm_paopao_train_v4.csv')
+    #extract(const.DATAPATH, 'kenlm_paopao_chars_test_v3.csv', 'data_kenlm_paopao_test_v4.csv')
+
+
 if __name__ == '__main__':
     main()

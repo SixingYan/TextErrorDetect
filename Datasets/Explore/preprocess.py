@@ -206,6 +206,30 @@ def extract_zhengzhi(path, source, target):
     df.to_csv(os.path.join(const.DATAPATH, target), index=None)
 
 # --------------
+
+# --------------
+# 抽取nn baseline的数据集
+
+
+def extract_nnbaseline(source):
+    """  """
+    def seperate(path, df, dtype):
+        df.sample(frac=0.7).to_csv(os.path.join(path.format(dtype), 'train.tsv'), sep='\t', index=None, header=None)
+        df.sample(frac=0.1).to_csv(os.path.join(path.format(dtype), 'valid.tsv'), sep='\t', index=None, header=None)
+        df.sample(frac=0.2).to_csv(os.path.join(path.format(dtype), 'test.tsv'), sep='\t', index=None, header=None)
+
+    DATAPATH = 'D:/yansixing/ErrorDetection/Datasets/Data/kenlmpaopao_{}/'
+    df = pd.read_csv(os.path.join(const.DATAPATH, source))  # [:100]
+    df = df[['sent', 'target']]
+    df['sent'] = df['sent'].apply(lambda x: str(x))
+    seperate(DATAPATH, df, 'chars')
+
+    df['sent'] = df['sent'].apply(lambda x: ' '.join(w for w in jieba.cut(''.join(x.split()))))
+    seperate(DATAPATH, df, 'jieba')
+
+
+# --------------
+
 # --------------
 # 抽取句法特征
 
@@ -349,6 +373,99 @@ def extract_normal():
 
 # --------------
 # --------------
+
+
+def getNegPos(cut):
+    source = 'kenlm_paopao_{}_train_v3.csv'.format(cut)
+    df = pd.read_csv(os.path.join(const.DATAPATH, source.format(cut)))
+    print('start...')
+    df['sent'] = df['sent'].apply(lambda x: str(x))
+    if cut == 'jieba':
+        df['sent'] = df['sent'].apply(lambda x: ' '.join(w for w in jieba.cut(keepcn(x))))
+    else:
+        df['sent'] = df['sent'].apply(lambda x: ' '.join(parse_single(x)))
+
+    n_df = df[df['target'] == const.NEG]
+    p_df = df[df['target'] == const.POS]
+
+    n_df[['target', 'sent']].to_csv(os.path.join(const.DATAPATH, 'paopao_{}_v3.csv'.format(cut)), index=None)
+    p_df[['target', 'sent']].to_csv(os.path.join(const.DATAPATH, 'kenlm_{}_v3.csv'.format(cut)), index=None)
+
+
+def getSample(cut: str):
+    """  """
+    source = 'kenlm_paopao_{}_v2.csv'
+    df = pd.read_csv(os.path.join(const.DATAPATH, source.format(cut)))
+    print('start...')
+    ood = df.sample(frac=0.2)
+    data = df.sample(frac=0.8)
+
+    target = 'kenlm_paopao_{}_{}_v3.csv'
+    ood.to_csv(os.path.join(const.DATAPATH, target.format(cut, 'test')), index=None)
+    data.to_csv(os.path.join(const.DATAPATH, target.format(cut, 'train')), index=None)
+
+    print('Get fasttext')
+    with open(os.path.join(const.DATAPATH, '{}_{}_fasttext_v3.txt'.format(cut, 'test')), 'a', encoding='utf-8', errors='ignore') as f:
+        for x, y in zip(ood['target'].values.tolist(), ood['sent'].values.tolist()):
+            line = '{0}\t__label__{1}\n'.format(y, x)
+            f.write(line)
+
+    with open(os.path.join(const.DATAPATH, '{}_{}_fasttext_v3.txt'.format(cut, 'train')), 'a', encoding='utf-8', errors='ignore') as f:
+        for x, y in zip(data['target'].values.tolist(), data['sent'].values.tolist()):
+            line = '{0}\t__label__{1}\n'.format(y, x)
+            f.write(line)
+
+# --------------
+# --------------
+# sms 语料
+
+
+def extract_sms(path, source, target1, target2):
+    """  """
+    from conf import langconv
+    with open(os.path.join(path, source), 'r', encoding='utf_8_sig', errors='ignore') as f:
+        d = demjson.decode(f.read())
+        sent = []
+        for msg in d['smsCorpus']['message']:
+            if 'text' in msg and '$' in msg['text']:
+                sent.append(str(msg['text']['$']))
+
+        sent = [keepcn(s).strip() for s in sent if len(keepcn(s).strip()) > 4]
+        sent = [langconv.Converter('zh-hans').convert(s) for s in sent]  # 繁体字转简体字
+        print('size : ', len(sent))
+
+        df = DataFrame({'sent': [parse_single(s) for s in sent]})
+        print(df.head())
+        df.to_csv(os.path.join(path, target1), index=None)
+        del df
+
+        df = DataFrame({'sent': [' '.join(w for w in jieba.cut(s)) for s in sent]})
+        print(df.head())
+        df.to_csv(os.path.join(path, target2), index=None)
+
+
+# --------------
+# --------------
+# weibo 语料
+
+
+def extract_weibo(path, source, target1, target2):
+    with open(os.path.join(path, source), 'r', encoding='utf-8', errors='ignore') as f:
+        sent = f.readlines()  # [:100]
+        sent = [keepcn(s).strip() for s in sent if len(keepcn(s).strip()) > 4]
+        print('size : ', len(sent))
+
+        df = DataFrame({'sent': [parse_single(s) for s in sent]})
+        print(df.head())
+        df.to_csv(os.path.join(path, target1), index=None)
+        del df
+
+        df = DataFrame({'sent': [' '.join(w for w in jieba.cut(s)) for s in sent]})
+        print(df.head())
+        df.to_csv(os.path.join(path, target2), index=None)
+
+# --------------
+# --------------
 # 通用工具
 
 
@@ -365,6 +482,7 @@ def parse_sent(para: str)->List:
 
 def parse_single(sent: str)->List:
     """ 把中文句子转化成字的列表 """
+
     sent = keepcn(sent)
     return [w.strip() for w in sent if len(w.strip()) > 0]
 
@@ -385,7 +503,8 @@ def mergeDf(path: str, sources: List, target: str):
 
 def keepcn(s: str):
     """ 只保留中文 """
-    #print(s)
+    if len(s.strip()) < 2:
+        return ''
     return ''.join(w.strip() for w in re.findall(r'[\u4e00-\u9fa5]', s) if len(w.strip()) > 0)
 
 
@@ -425,11 +544,15 @@ def main():
     # 完成
     # extract_parnoise()
     # extract_normal()
+    # 完成
+    # extract_zhengzhi(const.DATAPATH, 'zhengzhi_file.csv', 'zhengzhi.csv')
+    # 完成
+    # getNegPos('chars')
+    # getNegPos('jieba')
 
-    #
-    extract_zhengzhi(const.DATAPATH, 'zhengzhi_file.csv', 'zhengzhi.csv')
-
-
+    # extract_weibo(const.DATAPATH, 'weibo.txt', 'weibo_chars.csv', 'weibo_jieba.csv')
+    #extract_sms(const.DATAPATH, 'smsCorpus_zh_2015.03.09.json', 'sms_chars.csv', 'sms_jieba.csv')
+    extract_nnbaseline('kenlm_paopao_chars_v2.csv')
 
 if __name__ == '__main__':
     main()
